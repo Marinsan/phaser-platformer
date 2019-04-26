@@ -14,6 +14,8 @@ import enemy from '../assets/enemy.png'
 
 let score = 0
 let scoreText = ''
+let game
+player.scene.cameras.main.shake(500)
 function takeCoin (player, coin) {
   // todo -> millorar amb una animacio i executar so al agafar la moneda
   coin.disableBody(true, true)
@@ -24,6 +26,9 @@ function takeCoin (player, coin) {
 
 function die (player, enemy) {
   player.disableBody(true, true)
+
+  game.camera.main.shake(500)
+
 }
 export default {
   name: 'Game',
@@ -99,13 +104,23 @@ export default {
 
           // ENEMIES
 
-          this.enemy = this.physics.add.group()
-          this.enemy.create(50, 200 / 2, 'enemy')
-          this.physics.add.collider(this.enemy, this.level)
+          this.enemies = this.physics.add.group()
+          this.enemies.create(500 / 2 + 130, 200 / 2, 'enemy')
+          this.physics.add.collider(this.enemies, this.level)
+          this.physics.add.overlap(this.player, this.enemies, die, null, this)
 
 
           // SCORE
           scoreText = this.add.text(20, 20, 'Score: 0', { fontSize: '18px', fill: '#000' })
+
+          // LOOSER TEXT
+          this.loserText = this.add.text(500 / 2 - 50, 200 / 2 - 50, 'LOOSER!', { fontSize: '30px', fill: '#000' }).setVisible(false)
+          this.cameras.main.on('camerashakestart', () => {
+            this.loserText.setVisible(true)
+          })
+          this.cameras.main.on('camerashakecomplete', () => {
+            this.loserText.setVisible(false)
+          })
         },
         update () {
           // sexecuta continuament al game loop -> 60 vegades per segon
