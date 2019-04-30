@@ -11,7 +11,8 @@ import ground from '../assets/ground.png'
 import player from '../assets/player.png'
 import coin from '../assets/coin.png'
 import enemy from '../assets/enemy.png'
-import dead from '../assets/dead.mp3'
+import soundDead from '../assets/dead.mp3'
+import soundCoin from '../assets/coin.mp3'
 let score = 0
 let scoreText
 
@@ -21,16 +22,16 @@ function takeCoin (player, coin) {
   score = score + 10
   scoreText.setText('Score: ' + score)
   console.log('takecoin')
+  this.sound.play('soundCoin')
 }
 
 function die (player, enemy) {
-  // todo executar so
   // todo reiniciar nivell
   player.disableBody(true, true)
 
   player.scene.cameras.main.shake(500)
 
-  this.sound.play('dead')
+  this.sound.play('soundDead')
 }
 export default {
   name: 'Game',
@@ -55,7 +56,8 @@ export default {
           this.load.image('coin', coin)
           this.load.image('enemy', enemy)
           this.load.spritesheet('player', player, { frameWidth: 28, frameHeight: 22 })
-          this.load.audio('dead', dead)
+          this.load.audio('soundDead', soundDead)
+          this.load.audio('soundCoin', soundCoin)
 
           // AUDIO
           // this.load.setBaseURL('http://labs.phaser.io')
@@ -65,7 +67,9 @@ export default {
           // initialize del nivell -> afegirem tiles  (level: pareds, terres, players, monedes, enemics)
           console.log('create')
 
-          this.sound.add('dead')
+          // Afegim el so
+          this.sound.add('soundDead')
+          this.sound.add('soundCoin')
 
           this.cameras.main.backgroundColor.setTo(52, 152, 219)
 
