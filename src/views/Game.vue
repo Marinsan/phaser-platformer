@@ -11,7 +11,7 @@ import ground from '../assets/ground.png'
 import player from '../assets/player.png'
 import coin from '../assets/coin.png'
 import enemy from '../assets/enemy.png'
-
+import dead from '../assets/dead.mp3'
 let score = 0
 let scoreText
 
@@ -29,6 +29,8 @@ function die (player, enemy) {
   player.disableBody(true, true)
 
   player.scene.cameras.main.shake(500)
+
+  this.sound.play('dead')
 }
 export default {
   name: 'Game',
@@ -53,6 +55,7 @@ export default {
           this.load.image('coin', coin)
           this.load.image('enemy', enemy)
           this.load.spritesheet('player', player, { frameWidth: 28, frameHeight: 22 })
+          this.load.audio('dead', dead)
 
           // AUDIO
           // this.load.setBaseURL('http://labs.phaser.io')
@@ -61,6 +64,8 @@ export default {
         create () {
           // initialize del nivell -> afegirem tiles  (level: pareds, terres, players, monedes, enemics)
           console.log('create')
+
+          this.sound.add('dead')
 
           this.cameras.main.backgroundColor.setTo(52, 152, 219)
 
