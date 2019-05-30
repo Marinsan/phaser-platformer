@@ -21,10 +21,10 @@ import buttonHome from '../assets/home.png'
 import explosionDie from '../assets/explosion.png'
 import win from '../assets/win.png'
 import one from '../assets/one.png'
+import soundJump from '../assets/jump.mp3'
 let score = 0
 let scoreText
 let livesText
-
 function takeCoin (player, coin) {
   this.tweens.add({
     targets: coin,
@@ -72,32 +72,21 @@ function onWorldBoundsCollide (player) {
     this.scene.start('sceneGameOver')
   }
 }
-function die (player) {
-    this.player.lives = this.player.lives - 1
-    this.explosion = this.physics.add.sprite(
-        this.player.body.x + this.player.body.height / 2,
-        this.player.body.y + this.player.body.width / 2,
-        'explosion'
-    )
-    this.tweens.add({
-        targets: player,
-        y: 5,
-        scaleX: 0,
-        ease: 'Linear',
-        duration: 360,
-        yoyo: false,
-        repeat: 0,
-        onComplete: () => {
-            this.player.x = 500 / 2
-            this.player.y = 200 / 2 - 50
-        }
-    })
-    this.sound.play('soundDead')
-    this.explosion.anims.play('explosion', false)
-    livesText.setText('Lives: ' + this.player.lives)
-    if (this.player.lives == 0) {
-        this.scene.start('sceneGameOver')
-    }
+function die () {
+  this.player.lives = this.player.lives - 1
+  this.explosion = this.physics.add.sprite(
+    this.player.body.x + this.player.body.height / 2,
+    this.player.body.y + this.player.body.width / 2,
+    'explosion'
+  )
+  this.explosion.anims.play('explosion', false)
+  this.player.x = 500 / 2
+  this.player.y = 200 / 2 - 50
+  this.sound.play('soundDead')
+  livesText.setText('Lives: ' + this.player.lives)
+  if (this.player.lives == 0) {
+    this.scene.start('sceneGameOver')
+  }
 }
 
 export default {
@@ -141,6 +130,7 @@ class SceneLoading extends Phaser.Scene {
     this.load.spritesheet('explosionDie', explosionDie, { frameWidth: 128, frameHeight: 128 })
     this.load.audio('soundDead', soundDead)
     this.load.audio('soundCoin', soundCoin)
+    this.load.audio('soundJump', soundJump)
 
     // D'aqui fins al final del preload es tot la barra de carrega del principi
     var progressBar = this.add.graphics()
@@ -323,9 +313,28 @@ class ScenePlay extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.enemies, die, null, this)
 
     // SCORE & LIVES
-    scoreText = this.add.text(150, 10, 'Score: 0', { fontSize: '18px', fill: '#000', fontFamily: 'font' })
+    scoreText = this.add.text(150, 10, 'Score: 0', { fontSize: '18px', fill: '#FFFF00', fontFamily: 'font' })
 
-    livesText = this.add.text(270, 10, 'Lives: 3', { fontSize: '18px', fill: '#000', fontFamily: 'font' })
+    livesText = this.add.text(270, 10, 'Lives: 3', { fontSize: '18px', fill: '#FF0000', fontFamily: 'font' })
+
+    // PARTTICLES PLAYER
+    this.dust = this.add.particles('dust')
+    this.dust.createEmitter(
+      {
+        x: this.player.x,
+        y: this.player.y + 10,
+        quantity: { min: 1, max: 1 },
+        speedX: { min: -100, max: 100 },
+        speedY: { min: -100, max: 100 },
+        gravityY: 0,
+        gravityX: 0,
+        // tint: 0x2bff2b,
+        // maxParticles: 20,
+        lifespan: 300,
+        on: false,
+        active: true,
+        emitCallback: () => { }
+      })
 
     // LOOSER TEXT
     this.loserText = this.add.text(500 / 2 - 50, 200 / 2 - 50, 'YOU DIED', { fontSize: '30px', fill: '#830' }).setVisible(false)
@@ -351,6 +360,7 @@ class ScenePlay extends Phaser.Scene {
 
     if (this.cursors.up.isDown && this.player.body.touching.down) {
       this.player.setVelocityY(-160)
+      this.sound.play('soundJump')
     }
   }
 }
