@@ -1,5 +1,7 @@
 <template>
-  <div id="game">
+  <div>
+  <div style="font-family:font; position:absolute; left:-1000px; visibility:hidden;">.</div>
+  <div id="game"></div>
   </div>
 </template>
 
@@ -16,30 +18,88 @@ import buttonPlay from '../assets/buttonplay.png'
 import logo from '../assets/logo.png'
 import gameOver from '../assets/go.jpg'
 import buttonHome from '../assets/home.png'
+import explosionDie from '../assets/explosion.png'
+import win from '../assets/win.png'
+import one from '../assets/one.png'
 let score = 0
 let scoreText
 let livesText
 
 function takeCoin (player, coin) {
-  // todo -> millorar amb una animacio i executar so al agafar la moneda
-  coin.disableBody(true, true)
+  this.tweens.add({
+    targets: coin,
+    y: 50,
+    scaleX: 0,
+    ease: 'Linear',
+    duration: 160,
+    yoyo: false,
+    repeat: 0,
+    onComplete: () => { coin.disableBody(true, true) }
+  })
+  coin.disableBody(true)
   score = score + 10
   scoreText.setText('Score: ' + score)
+  if (score == 30) {
+    this.scene.start('sceneWin')
+  }
   this.sound.play('soundCoin')
 }
 
-function die (player, enemy) {
-  // todo reiniciar nivell
-  player.lives = player.lives - 1
-  player.scene.cameras.main.shake(500)
+function onWorldBoundsCollide (player) {
+  this.player.lives = this.player.lives - 1
+  this.explosion = this.physics.add.sprite(
+    this.player.body.x + this.player.body.height / 2,
+    this.player.body.y + this.player.body.width / 2,
+    'explosion'
+  )
+  this.tweens.add({
+    targets: player,
+    y: 5,
+    scaleX: 0,
+    ease: 'Linear',
+    duration: 360,
+    yoyo: false,
+    repeat: 0,
+    onComplete: () => {
+      this.player.x = 500 / 2
+      this.player.y = 200 / 2 - 50
+    }
+  })
   this.sound.play('soundDead')
-  player.x = 500 / 2
-  player.y = 200 / 2 - 50
-  livesText.setText('Lives: ' + player.lives)
-  if (player.lives == 0) {
+  this.explosion.anims.play('explosion', false)
+  livesText.setText('Lives: ' + this.player.lives)
+  if (this.player.lives == 0) {
     this.scene.start('sceneGameOver')
   }
 }
+function die (player) {
+    this.player.lives = this.player.lives - 1
+    this.explosion = this.physics.add.sprite(
+        this.player.body.x + this.player.body.height / 2,
+        this.player.body.y + this.player.body.width / 2,
+        'explosion'
+    )
+    this.tweens.add({
+        targets: player,
+        y: 5,
+        scaleX: 0,
+        ease: 'Linear',
+        duration: 360,
+        yoyo: false,
+        repeat: 0,
+        onComplete: () => {
+            this.player.x = 500 / 2
+            this.player.y = 200 / 2 - 50
+        }
+    })
+    this.sound.play('soundDead')
+    this.explosion.anims.play('explosion', false)
+    livesText.setText('Lives: ' + this.player.lives)
+    if (this.player.lives == 0) {
+        this.scene.start('sceneGameOver')
+    }
+}
+
 export default {
   name: 'Game',
   created () {
@@ -54,7 +114,7 @@ export default {
           gravity: { y: 200 }
         }
       },
-      scene: [SceneLoading, SceneMenu, ScenePlay, SceneGameOver]
+      scene: [SceneLoading, SceneMenu, ScenePlay, SceneGameOver, SceneWin]
     }
     new Phaser.Game(config)
   }
@@ -73,24 +133,22 @@ class SceneLoading extends Phaser.Scene {
     this.load.image('coin', coin)
     this.load.image('enemy', enemy)
     this.load.image('gameOver', gameOver)
+    this.load.image('win', win)
+    this.load.image('one', one)
     this.load.spritesheet('player', player, { frameWidth: 28, frameHeight: 22 })
     this.load.spritesheet('buttonPlay', buttonPlay, { frameWidth: 613, frameHeight: 242 })
     this.load.spritesheet('buttonHome', buttonHome, { frameWidth: 222, frameHeight: 215 })
+    this.load.spritesheet('explosionDie', explosionDie, { frameWidth: 128, frameHeight: 128 })
     this.load.audio('soundDead', soundDead)
     this.load.audio('soundCoin', soundCoin)
-    // Joystick virtual
-    var url
-
-    url = 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/plugins/dist/rexvirtualjoystickplugin.min.js'
-    this.load.plugin('rexvirtualjoystickplugin', url, true)
 
     // D'aqui fins al final del preload es tot la barra de carrega del principi
     var progressBar = this.add.graphics()
     var progressBox = this.add.graphics()
     progressBox.fillStyle(0x222222, 0.8)
 
-    var width = this.game.renderer.width * 0.5
-    var height = this.game.renderer.height * 0.5
+    var width = this.game.renderer.width
+    var height = this.game.renderer.height
     progressBox.fillRect(window.x = width * 0.5 - 165, window.y = height * 0.5 - 75, 320, 50)
     var loadingText = this.make.text({
       x: width * 0.5,
@@ -155,10 +213,6 @@ class SceneMenu extends Phaser.Scene {
     super({ key: 'sceneMenu' })
   }
 
-  preload () {
-
-  }
-
   create () {
     this.cameras.main.backgroundColor.setTo(52, 152, 219)
     let logo = this.add.sprite(this.game.renderer.width * 0.5, this.game.renderer.height * 0.5 - 40, 'logo').setDepth(1)
@@ -170,6 +224,7 @@ class SceneMenu extends Phaser.Scene {
     buttonPlay.setInteractive()
     buttonPlay.on('pointerup', () => {
       this.scene.start('scenePlay')
+      score = 0
     })
   }
 }
@@ -209,10 +264,6 @@ class ScenePlay extends Phaser.Scene {
     super({ key: 'scenePlay' })
   }
 
-  preload () {
-
-  }
-
   create () {
     // Afegim el so
     this.sound.add('soundDead')
@@ -229,10 +280,12 @@ class ScenePlay extends Phaser.Scene {
     // PLAYER
 
     this.player = this.physics.add.sprite(500 / 2, 200 / 2 - 50, 'player')
-    this.player.setCollideWorldBounds(true)
     this.player.setBounce(0.2)
+    this.player.body.setCollideWorldBounds(true)
+    this.player.body.onWorldBounds = true
     this.physics.add.collider(this.player, this.level)
     this.player.lives = 3
+    this.physics.world.on('worldbounds', onWorldBoundsCollide, this)
 
     // DEFINE SOUNDS
     // this.dustSound = this.add.audio('dust', 0.1)
@@ -244,6 +297,12 @@ class ScenePlay extends Phaser.Scene {
       frames: this.anims.generateFrameNumbers('player', { start: 3, end: 5 }),
       frameRate: 5,
       repeat: -1
+    })
+
+    this.anims.create({
+      key: 'explosion',
+      frames: this.anims.generateFrameNumbers('explosionDie', { start: 0, end: 39 }),
+      frameRate: 80
     })
 
     this.coins = this.physics.add.group()
@@ -260,11 +319,13 @@ class ScenePlay extends Phaser.Scene {
     this.enemies = this.physics.add.group()
     this.enemies.create(500 / 2 + 130, 200 / 2, 'enemy')
     this.physics.add.collider(this.enemies, this.level)
+    this.physics.add.collider(this.player, this.level)
     this.physics.add.overlap(this.player, this.enemies, die, null, this)
 
     // SCORE & LIVES
-    scoreText = this.add.text(20, 20, 'Score: 0', { fontSize: '18px', fill: '#000' })
-    livesText = this.add.text(20, 40, 'Lives: 3', { fontSize: '18px', fill: '#000' })
+    scoreText = this.add.text(150, 10, 'Score: 0', { fontSize: '18px', fill: '#000', fontFamily: 'font' })
+
+    livesText = this.add.text(270, 10, 'Lives: 3', { fontSize: '18px', fill: '#000', fontFamily: 'font' })
 
     // LOOSER TEXT
     this.loserText = this.add.text(500 / 2 - 50, 200 / 2 - 50, 'YOU DIED', { fontSize: '30px', fill: '#830' }).setVisible(false)
@@ -293,4 +354,39 @@ class ScenePlay extends Phaser.Scene {
     }
   }
 }
+
+class SceneWin extends Phaser.Scene {
+  constructor () {
+    super({ key: 'sceneWin' })
+  }
+  create () {
+    this.cameras.main.backgroundColor.setTo(255, 255, 0)
+    let logo = this.add.sprite(this.game.renderer.width * 0.5 + 150, this.game.renderer.height * 0.5 - 20, 'win').setDepth(1)
+    logo.displayHeight = 105
+    logo.displayWidth = 105
+    let one = this.add.sprite(this.game.renderer.width * 0.5 - 150, this.game.renderer.height * 0.5 - 20, 'one').setDepth(1)
+    one.displayHeight = 105
+    one.displayWidth = 105
+
+    let buttonHome = this.add.sprite(this.game.renderer.width * 0.5, this.game.renderer.height * 0.5 + 60, 'buttonHome').setDepth(1)
+    buttonHome.displayHeight = 50
+    buttonHome.displayWidth = 60
+
+    buttonHome.setInteractive()
+    buttonHome.on('pointerup', () => {
+      this.scene.start('sceneMenu')
+    })
+
+    scoreText = this.add.text(this.game.renderer.width * 0.5 - 100, this.game.renderer.height * 0.5 - 30, 'Score: ' + score, { fontSize: '32px', fill: '#000', fontFamily: 'font' })
+  }
+}
 </script>
+
+<style media='screen' type='text/css'>
+  @font-face {
+    font-family: font;
+    src: url('../assets/font/font.ttf');
+    font-weight:400;
+    font-weight:normal;
+  }
+</style>
